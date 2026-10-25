@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Takaran Dapur — Konverter Takaran Masak ke Gram</title>
+    <style>
+      :root {
+        --bg: #faf1de;
+        --bg-warm: #f5e7cd;
+        --surface: #fffaf0;
+        --card: #fffdf7;
+        --ink: #3d2a1a;
+        --ink-soft: #6d5138;
+        --muted: #96795a;
+        --terra: #c2501c;
+        --terra-dark: #9c3d12;
+        --terra-soft: #fbe3cf;
+        --green: #56762f;
+        --green-dark: #40591f;
+        --green-soft: #e7eed3;
+        --line: #ead9ba;
+        --input-bg: #ffffff;
+        --shadow: 0 2px 10px rgba(120, 72, 20, 0.10);
+        --shadow-lg: 0 10px 30px rgba(120, 72, 20, 0.16);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #221709;
+          --bg-warm: #2b1d0e;
+          --surface: #32220f;
+          --card: #37260f;
+          --ink: #f6e8d2;
+          --ink-soft: #dcc39c;
+          --muted: #b99b6d;
+          --terra: #e57f42;
+          --terra-dark: #f0935c;
+          --terra-soft: #4a2c14;
+          --green: #a9c473;
+          --green-dark: #c2d892;
+          --green-soft: #333d1c;
+          --line: #54401f;
+          --input-bg: #2b1d0e;
+          --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+          --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+          color-scheme: dark;
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(ellipse 90% 300px at 50% -60px, var(--bg-warm), transparent 70%),
+          var(--bg);
+        color: var(--ink);
+        font-family: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, sans-serif;
+        line-height: 1.5;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      h1, h2, h3 { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; margin: 0; }
+      button { font: inherit; cursor: pointer; }
+      input, select { font: inherit; color: var(--ink); }
+
+      .wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px 40px; }
+
+      /* ---------- Intro ---------- */
+      .intro { padding: 6px 2px 4px; }
+      .intro h1 { font-size: 1.9rem; line-height: 1.15; letter-spacing: -0.01em; }
+      .intro h1 .accent { color: var(--terra); }
+      .intro p { margin: 10px 0 0; color: var(--ink-soft); font-size: 1rem; max-width: 34em; }
+      .intro p strong { color: var(--ink); }
+
+      /* ---------- Sections ---------- */
+      section { margin-top: 26px; }
+      .sec-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+      .sec-head h2 { font-size: 1.3rem; }
+      .sec-head .rule { flex: 1; height: 2px; background: var(--line); border-radius: 2px; align-self: center; }
+      .sec-sub { color: var(--muted); font-size: 0.9rem; margin: -6px 0 12px; }
+
+      /* ---------- Ingredient grid ---------- */
+      .ing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      @media (min-width: 560px) { .ing-grid { grid-template-columns: repeat(4, 1fr); } }
+      .ing-card {
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        padding: 12px 6px 10px;
+        background: var(--card);
+        border: 2px solid var(--line);
+        border-radius: 14px;
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+        min-height: 86px;
+      }
+      .ing-card:active { transform: scale(0.97); }
+      .ing-card svg { width: 28px; height: 28px; color: var(--terra); flex: none; }
+      .ing-card .ing-name { font-size: 0.82rem; font-weight: 600; line-height: 1.25; text-align: center; }
+      .ing-card[aria-pressed="true"] {
+        border-color: var(--terra);
+        background: var(--terra-soft);
+        box-shadow: 0 0 0 1px var(--terra), var(--shadow);
+      }
+      .ing-card[aria-pressed="true"] svg { color: var(--terra-dark); }
+
+      /* ---------- Converter panel ---------- */
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow-lg);
+        padding: 16px;
+        margin-top: 14px;
+      }
+      .field-label { display: block; font-size: 0.82rem; font-weight: 700; letter-spacing: 0.02em; color: var(--ink-soft); margin-bottom: 6px; }
+      .amount-row { display: flex; gap: 10px; }
+      .amount-input {
+        flex: 1; min-width: 0;
+        font-size: 1.5rem; font-weight: 700;
+        padding: 12px 14px;
+        background: var(--input-bg);
+        border: 2px solid var(--line);
+        border-radius: 12px;
+      }
+      .amount-input:focus { outline: none; border-color: var(--terra); }
+      .unit-row { display: flex; align-items: stretch; gap: 8px; margin-top: 12px; }
+      .unit-box { flex: 1; min-width: 0; }
+      .unit-select {
+        width: 100%;
+        font-size: 1rem; font-weight: 600;
+        padding: 12px 10px;
+        background: var(--input-bg);
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        min-height: 52px;
+      }
+      .unit-select:focus { outline: none; border-color: var(--terra); }
+      .swap-btn {
+        align-self: flex-end;
+        width: 52px; height: 52px; flex: none;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--green); color: #fff;
+        border: none; border-radius: 50%;
+        box-shadow: var(--shadow);
+        transition: transform 0.25s ease, background 0.15s ease;
+      }
+      @media (prefers-color-scheme: dark) { .swap-btn { color: #1d1503; } }
+      .swap-btn:hover { background: var(--green-dark); }
+      .swap-btn:active { transform: rotate(180deg); }
+      .swap-btn svg { width: 24px; height: 24px; }
+
+      /* ---------- Result ---------- */
+      .result-card {
+        margin-top: 16px;
+        background: var(--terra);
+        color: #fff;
+        border-radius: 16px;
+        padding: 18px;
+        position: relative;
+        overflow: hidden;
+      }
+      @media (prefers-color-scheme: dark) { .result-card { background: #8a3c10; } }
+      .result-top { display: flex; align-items: flex-start; gap: 12px; }
+      .result-eq { font-size: 0.95rem; opacity: 0.92; }
+      .result-big { font-size: 2.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+      .result-big .unit-name { font-size: 1.25rem; font-weight: 700; }
+      .spoon { flex: none; width: 40px; height: 40px; margin-left: auto; opacity: 0.95; }
+      .spoon.wiggle { animation: wiggle 0.55s ease; transform-origin: 70% 20%; }
+      @keyframes wiggle {
+        0% { transform: rotate(0deg); }
+        20% { transform: rotate(-16deg); }
+        45% { transform: rotate(12deg); }
+        70% { transform: rotate(-7deg); }
+        100% { transform: rotate(0deg); }
+      }
+      .copy-btn {
+        margin-top: 14px;
+        width: 100%;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 13px;
+        background: #fff; color: var(--terra-dark);
+        border: none; border-radius: 12px;
+        font-weight: 700; font-size: 1rem;
+        transition: background 0.15s ease;
+      }
+      .copy-btn svg { width: 19px; height: 19px; }
+      .copy-btn.copied { background: var(--green-soft); color: var(--green-dark); }
+
+      /* ---------- Equivalents ---------- */
+      .equiv-title { font-weight: 700; font-size: 0.95rem; margin: 18px 0 8px; color: var(--ink-soft); }
+      .equiv-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .equiv-list li {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 12px;
+        display: flex; flex-direction: column;
+      }
+      .equiv-list .eq-val { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+      .equiv-list .eq-unit { font-size: 0.8rem; color: var(--muted); }
+
+      /* ---------- Presets ---------- */
+      .preset-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .preset-chip {
+        padding: 10px 14px;
+        background: var(--card);
+        border: 2px solid var(--line);
+        border-radius: 999px;
+        font-weight: 600; font-size: 0.92rem;
+        color: var(--ink);
+        box-shadow: var(--shadow);
+        min-height: 44px;
+        transition: border-color 0.15s ease, background 0.15s ease;
+      }
+      .preset-chip:active { background: var(--terra-soft); border-color: var(--terra); }
+
+      /* ---------- Scaler ---------- */
+      .mult-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .mult-chip {
+        min-width: 52px; min-height: 48px;
+        padding: 10px 14px;
+        background: var(--card);
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        font-weight: 700; font-size: 1rem;
+      }
+      .mult-chip[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: #fff; }
+      @media (prefers-color-scheme: dark) { .mult-chip[aria-pressed="true"] { color: #1d1503; } }
+      .mult-custom { display: flex; align-items: center; gap: 6px; }
+      .mult-custom input {
+        width: 76px; padding: 11px 10px;
+        font-size: 1rem; font-weight: 700; text-align: center;
+        background: var(--input-bg);
+        border: 2px solid var(--line); border-radius: 12px; min-height: 48px;
+      }
+      .mult-custom input:focus { outline: none; border-color: var(--green); }
+      .mult-custom span { font-weight: 700; color: var(--ink-soft); }
+
+      .scale-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+      .scale-row {
+        display: flex; align-items: center; gap: 10px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px 12px;
+        box-shadow: var(--shadow);
+      }
+      .scale-row .sr-main { flex: 1; min-width: 0; }
+      .scale-row .sr-name { font-weight: 700; font-size: 0.98rem; }
+      .scale-row .sr-detail { font-size: 0.88rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+      .scale-row .sr-detail .sr-arrow { color: var(--terra); font-weight: 700; }
+      .scale-row .sr-grams { font-weight: 700; color: var(--green-dark); white-space: nowrap; font-size: 0.95rem; text-align: right; }
+      .remove-btn {
+        flex: none; width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        background: transparent; border: 1px solid var(--line); border-radius: 10px;
+        color: var(--terra);
+      }
+      .remove-btn svg { width: 18px; height: 18px; }
+      .scale-empty { color: var(--muted); font-size: 0.95rem; padding: 6px 2px; }
+      .scale-total {
+        margin-top: 12px; padding: 12px 14px;
+        background: var(--green-soft);
+        border-radius: 12px;
+        font-weight: 700; color: var(--green-dark);
+        display: flex; justify-content: space-between; gap: 10px;
+      }
+
+      .add-form {
+        margin-top: 14px;
+        background: var(--surface);
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 14px;
+      }
+      .add-form .af-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      @media (min-width: 520px) { .add-form .af-grid { grid-template-columns: 1.4fr 0.8fr 1fr; } }
+      .add-form select, .add-form input {
+        width: 100%; padding: 12px 10px;
+        background: var(--input-bg);
+        border: 2px solid var(--line); border-radius: 12px;
+        font-size: 1rem; min-height: 52px;
+      }
+      .add-form select:focus, .add-form input:focus { outline: none; border-color: var(--green); }
+      .add-btn {
+        margin-top: 12px; width: 100%;
+        padding: 13px;
+        background: var(--green); color: #fff;
+        border: none; border-radius: 12px;
+        font-weight: 700; font-size: 1rem; min-height: 52px;
+      }
+      @media (prefers-color-scheme: dark) { .add-btn { color: #1d1503; } }
+
+      /* ---------- Info sections ---------- */
+      .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; counter-reset: step; }
+      .steps li {
+        background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+        padding: 12px 14px 12px 52px; position: relative; box-shadow: var(--shadow);
+      }
+      .steps li::before {
+        counter-increment: step; content: counter(step);
+        position: absolute; left: 12px; top: 12px;
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--terra); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 0.95rem;
+      }
+      .steps li strong { display: block; margin-bottom: 2px; }
+      .steps li span { color: var(--ink-soft); font-size: 0.94rem; }
+
+      .note-box {
+        background: var(--green-soft);
+        border: 1px solid var(--green);
+        border-radius: 14px;
+        padding: 14px 16px;
+      }
+      .note-box h3 { font-size: 1.05rem; color: var(--green-dark); margin-bottom: 6px; }
+      .note-box p { margin: 0 0 8px; font-size: 0.95rem; color: var(--ink); }
+      .note-box p:last-child { margin-bottom: 0; }
+
+      .density-note { margin-top: 10px; font-size: 0.85rem; color: var(--muted); }
+
+      footer { margin-top: 34px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+      /* ---------- Toast ---------- */
+      .toast {
+        position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
+        transform: translate(-50%, 16px);
+        background: var(--ink); color: var(--bg);
+        padding: 12px 20px; border-radius: 999px;
+        font-weight: 700; font-size: 0.95rem;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        box-shadow: var(--shadow-lg);
+        max-width: calc(100vw - 32px); text-align: center;
+        z-index: 50;
+      }
+      .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spoon.wiggle { animation: none; }
+        .swap-btn:active { transform: none; }
+        .toast { transition: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="intro">
+        <h1>Takaran <span class="accent">Dapur</span></h1>
+        <p>
+          Resep bilang <strong>“1 gelas belimbing tepung”</strong>, timbangan bilang gram.
+          Alat ini mengubah takaran sendok, gelas, dan cup menjadi gram — <strong>dihitung per bahan</strong>,
+          karena sesendok tepung tidak sama beratnya dengan sesendok gula.
+        </p>
+      </div>
+
+      <!-- ================= KONVERTER ================= -->
+      <section aria-labelledby="judul-konverter">
+        <div class="sec-head">
+          <h2 id="judul-konverter">Konverter Takaran</h2>
+          <div class="rule"></div>
+        </div>
+
+        <p class="sec-sub" style="margin-top:0">1. Pilih bahan</p>
+        <div class="ing-grid" id="ingGrid" role="group" aria-label="Pilih bahan"></div>
+
+        <div class="panel">
+          <p class="sec-sub" style="margin-top:0">2. Isi jumlah dan satuannya</p>
+          <label class="field-label" for="amountInput">Jumlah</label>
+          <div class="amount-row">
+            <input class="amount-input" id="amountInput" type="text" inputmode="decimal" autocomplete="off" value="3" aria-label="Jumlah yang dikonversi" />
+          </div>
+          <div class="unit-row">
+            <div class="unit-box">
+              <label class="field-label" for="fromUnit">Dari satuan</label>
+              <select class="unit-select" id="fromUnit"></select>
+            </div>
+            <button class="swap-btn" id="swapBtn" type="button" aria-label="Tukar satuan asal dan tujuan" title="Tukar satuan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h13"/><path d="M13.5 3.5 17 7l-3.5 3.5"/><path d="M20 17H7"/><path d="M10.5 13.5 7 17l3.5 3.5"/></svg>
+            </button>
+            <div class="unit-box">
+              <label class="field-label" for="toUnit">Ke satuan</label>
+              <select class="unit-select" id="toUnit"></select>
+            </div>
+          </div>
+
+          <div class="result-card" aria-live="polite">
+            <div class="result-top">
+              <div>
+                <div class="result-eq" id="resultEq">3 sdm gula pasir</div>
+                <div class="result-big"><span id="resultNum">37,5</span> <span class="unit-name" id="resultUnit">gram</span></div>
+              </div>
+              <svg class="spoon" id="spoonIcon" viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <ellipse cx="15" cy="13" rx="8.5" ry="10.5" transform="rotate(-24 15 13)"/>
+                <path d="M20.5 20.5 38 40"/>
+              </svg>
+            </div>
+            <button class="copy-btn" id="copyBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span id="copyLabel">Salin Hasil</span>
+            </button>
+          </div>
+
+          <h3 class="equiv-title">Setara dengan</h3>
+          <ul class="equiv-list" id="equivList"></ul>
+          <p class="density-note" id="densityNote"></p>
+        </div>
+      </section>
+
+      <!-- ================= PRESET ================= -->
+      <section aria-labelledby="judul-preset">
+        <div class="sec-head">
+          <h2 id="judul-preset">Pilihan Cepat</h2>
+          <div class="rule"></div>
+        </div>
+        <p class="sec-sub">Ketuk sekali untuk langsung mengisi konverter di atas.</p>
+        <div class="preset-row" id="presetRow"></div>
+      </section>
+
+      <!-- ================= SKALA RESEP ================= -->
+      <section aria-labelledby="judul-skala">
+        <div class="sec-head">
+          <h2 id="judul-skala">Skala Resep</h2>
+          <div class="rule"></div>
+        </div>
+        <p class="sec-sub">Mau bikin setengah resep atau dobel? Tambahkan bahan-bahannya, lalu pilih pengalinya. Setiap baris langsung menunjukkan takaran baru dan beratnya dalam gram.</p>
+
+        <div class="mult-row" id="multRow" role="group" aria-label="Pilih pengali resep"></div>
+
+        <ul class="scale-list" id="scaleList"></ul>
+        <div class="scale-total" id="scaleTotal" hidden>
+          <span>Total berat semua bahan</span>
+          <span id="scaleTotalVal">0 gram</span>
+        </div>
+
+        <form class="add-form" id="addForm">
+          <div class="af-grid">
+            <div>
+              <label class="field-label" for="addIng">Bahan</label>
+              <select id="addIng"></select>
+            </div>
+            <div>
+              <label class="field-label" for="addAmount">Jumlah</label>
+              <input id="addAmount" type="text" inputmode="decimal" autocomplete="off" value="100" />
+            </div>
+            <div>
+              <label class="field-label" for="addUnit">Satuan</label>
+              <select id="addUnit"></select>
+            </div>
+          </div>
+          <button class="add-btn" type="submit">Tambah Bahan</button>
+        </form>
+      </section>
+
+      <!-- ================= CARA PAKAI ================= -->
+      <section aria-labelledby="judul-cara">
+        <div class="sec-head">
+          <h2 id="judul-cara">Cara Pakai</h2>
+          <div class="rule"></div>
+        </div>
+        <ol class="steps">
+          <li>
+            <strong>Pilih bahan dulu</strong>
+            <span>Berat satu sendok berbeda untuk tiap bahan, jadi konversi selalu dimulai dari memilih bahannya.</span>
+          </li>
+          <li>
+            <strong>Isi jumlah dan satuan asal</strong>
+            <span>Misalnya resep menulis “3 sdm” — isi angka 3, lalu pilih satuan sdm. Pilih satuan tujuan, misalnya gram.</span>
+          </li>
+          <li>
+            <strong>Baca hasil dan tabel setaranya</strong>
+            <span>Angka besar adalah hasil konversi. Tabel “Setara dengan” menunjukkan jumlah yang sama di semua satuan lain, berguna kalau timbangan atau gelas ukur tidak tersedia.</span>
+          </li>
+          <li>
+            <strong>Untuk mengubah porsi, pakai Skala Resep</strong>
+            <span>Masukkan semua bahan resep, pilih pengali (misalnya 2× untuk porsi dobel), dan setiap bahan otomatis dihitung ulang lengkap dengan berat gramnya.</span>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ================= CATATAN ================= -->
+      <section aria-labelledby="judul-catatan">
+        <div class="note-box">
+          <h3 id="judul-catatan">Catatan: semua angka adalah perkiraan</h3>
+          <p>
+            Hasil di aplikasi ini adalah <strong>perkiraan</strong>, bukan angka pasti. Massa jenis bahan bisa berbeda
+            tergantung merek, cara menyimpan, dan kelembapan udara — tepung yang lembap lebih berat daripada tepung yang kering.
+          </p>
+          <p>
+            Cara menakar juga berpengaruh besar: sendok yang diisi <strong>munjung</strong> (menggunung) bisa berisi hampir
+            dua kali lipat sendok <strong>peres</strong> (diratakan). Angka di sini dihitung untuk takaran peres.
+            Untuk hasil paling akurat, terutama untuk kue, gunakan timbangan dapur.
+          </p>
+        </div>
+      </section>
+
+      <footer>Takaran Dapur — konversi takaran masak Indonesia, dihitung per bahan.</footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      "use strict";
+
+      /* ============ DATA ============ */
+      // Massa jenis (gram per ml) tiap bahan — kunci seluruh konversi volume <-> berat.
+      var INGREDIENTS = [
+        { id: "terigu",    name: "Tepung terigu",   density: 0.53, icon: "wheat" },
+        { id: "gula",      name: "Gula pasir",      density: 0.83, icon: "bowl" },
+        { id: "gulamerah", name: "Gula merah",      density: 0.92, icon: "dome" },
+        { id: "mentega",   name: "Mentega",         density: 0.96, icon: "butter" },
+        { id: "minyak",    name: "Minyak goreng",   density: 0.91, icon: "bottle" },
+        { id: "air",       name: "Air",             density: 1.00, icon: "drop" },
+        { id: "beras",     name: "Beras",           density: 0.77, icon: "rice" },
+        { id: "tberas",    name: "Tepung beras",    density: 0.66, icon: "sack" },
+        { id: "tapioka",   name: "Tepung tapioka",  density: 0.53, icon: "root" },
+        { id: "cokelat",   name: "Cokelat bubuk",   density: 0.42, icon: "choco" },
+        { id: "garam",     name: "Garam",           density: 1.20, icon: "shaker" },
+        { id: "santan",    name: "Santan",          density: 0.97, icon: "coconut" },
+        { id: "madu",      name: "Madu",            density: 1.42, icon: "jar" },
+        { id: "susu",      name: "Susu bubuk",      density: 0.48, icon: "jug" }
+      ];
+
+      // factor: untuk satuan volume = ml per satuan; untuk satuan berat = gram per satuan.
+      var UNITS = [
+        { id: "sdt",   name: "Sendok teh (sdt)",      short: "sdt",            type: "vol",    factor: 5 },
+        { id: "sdm",   name: "Sendok makan (sdm)",    short: "sdm",            type: "vol",    factor: 15 },
+        { id: "gelas", name: "Gelas belimbing",       short: "gelas belimbing", type: "vol",   factor: 200 },
+        { id: "cup",   name: "Cup",                   short: "cup",            type: "vol",    factor: 240 },
+        { id: "ml",    name: "Mililiter (ml)",        short: "ml",             type: "vol",    factor: 1 },
+        { id: "gram",  name: "Gram",                  short: "gram",           type: "weight", factor: 1 },
+        { id: "ons",   name: "Ons",                   short: "ons",            type: "weight", factor: 100 },
+        { id: "kg",    name: "Kilogram (kg)",         short: "kg",             type: "weight", factor: 1000 }
+      ];
+
+      var PRESETS = [
+        { label: "1 gelas belimbing tepung terigu", ing: "terigu", amount: 1,   from: "gelas", to: "gram" },
+        { label: "3 sdm gula pasir",                ing: "gula",   amount: 3,   from: "sdm",   to: "gram" },
+        { label: "2 sdm mentega",                   ing: "mentega", amount: 2,  from: "sdm",   to: "gram" },
+        { label: "1 cup beras",                     ing: "beras",  amount: 1,   from: "cup",   to: "gram" },
+        { label: "5 sdm minyak goreng",             ing: "minyak", amount: 5,   from: "sdm",   to: "gram" },
+        { label: "1 sdt garam",                     ing: "garam",  amount: 1,   from: "sdt",   to: "gram" },
+        { label: "2 sdm madu",                      ing: "madu",   amount: 2,   from: "sdm",   to: "gram" },
+        { label: "250 ml santan",                   ing: "santan", amount: 250, from: "ml",    to: "gram" }
+      ];
+
+      var ICONS = {
+        wheat:  '<path d="M12 21v-9"/><path d="M12 12c0-2.8-2-4.5-5-4.5 0 3 2 4.5 5 4.5z"/><path d="M12 12c0-2.8 2-4.5 5-4.5 0 3-2 4.5-5 4.5z"/><path d="M12 8.5c0-2.8-2-4.5-5-4.5 0 3 2 4.5 5 4.5z" transform="translate(0 3.5)"/><path d="M12 8.5c0-2.8 2-4.5 5-4.5 0 3-2 4.5-5 4.5z" transform="translate(0 3.5)"/><path d="M12 3.5v3"/>',
+        bowl:   '<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8.5 8.5h.01M12 7h.01M15.5 8.5h.01" stroke-width="2.6"/><path d="M7 21h10"/>',
+        dome:   '<path d="M7 20l1.6-11h6.8L17 20z"/><path d="M5 20h14"/><path d="M9.8 13.5h4.4"/>',
+        butter: '<path d="M4 16l9-1.5L20 10l-6.5-1L4 12.5z"/><path d="M4 16v3.5L13 21v-6.5"/><path d="M20 10v3.5L13 15"/>',
+        bottle: '<path d="M10 3h4"/><path d="M10.5 3v4L8 10v10a1.5 1.5 0 0 0 1.5 1.5h5A1.5 1.5 0 0 0 16 20V10l-2.5-3V3"/><path d="M8 14.5h8"/>',
+        drop:   '<path d="M12 3.5c3.2 4.2 6 7.8 6 11a6 6 0 1 1-12 0c0-3.2 2.8-6.8 6-11z"/><path d="M9.5 14.5a2.8 2.8 0 0 0 2 3.2"/>',
+        rice:   '<path d="M4 13h16a8 8 0 0 1-16 0z"/><path d="M6 21h12"/><path d="M8 9.5c1-1.8 2.4-2.6 4-2.6M13 9.2c.6-2 1.8-3.2 3.4-3.7" /><path d="M10 6.4c.8-1.2 2-2 3.4-2.2"/>',
+        sack:   '<path d="M9 3.5h6l-1 3h-4z"/><path d="M8.6 6.5C6.5 9 5 12 5 15.5A5.5 5.5 0 0 0 10.5 21h3A5.5 5.5 0 0 0 19 15.5C19 12 17.5 9 15.4 6.5"/><path d="M8.5 14.5h7"/>',
+        root:   '<path d="M8 4.5c4.5 1 8 5.5 8.6 11 .2 2.3-.8 4-2.6 4.4-4.4 1-9-1.8-10.4-6.2C2.4 9.8 4 3.6 8 4.5z"/><path d="M7 9.5c1.8.6 3.4 1.8 4.6 3.4M10.5 7.2c1.6 1 2.9 2.4 3.8 4.1"/>',
+        choco:  '<rect x="4" y="5" width="12" height="15" rx="1.5" transform="rotate(-8 10 12)"/><path d="M8.2 6.4l.8 12.6M12.5 5.8l.8 12.6M5 11.5l11.6-1.4M5.7 16.6l11.6-1.4"/>',
+        shaker: '<path d="M9 3.5h6V7H9z"/><path d="M10.8 5h.01M13.2 5h.01" stroke-width="2.4"/><path d="M9.5 7h5l.8 12.2a1.8 1.8 0 0 1-1.8 1.8h-3a1.8 1.8 0 0 1-1.8-1.8z"/><path d="M9.3 13.5h5.4"/>',
+        coconut:'<path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M6.5 11a5.5 5.5 0 0 0 11 0"/><path d="M9 6.5c1-1.4 4-1.4 5 .2"/>',
+        jar:    '<path d="M9.5 8h5a4 4 0 0 1 4 4v6a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3v-6a4 4 0 0 1 4-4z"/><path d="M9 8V5.5h6V8"/><path d="M12 2.5v3"/><path d="M8.5 14.5h7"/>',
+        jug:    '<path d="M9 3.5h5v3l1.6 2.4c.6.9.9 1.9.9 3V18a2.5 2.5 0 0 1-2.5 2.5H9A2.5 2.5 0 0 1 6.5 18v-6.1c0-1.1.3-2.1.9-3L9 6.5z"/><path d="M16.4 10.5c1.8.3 3.1 1.7 3.1 3.5s-1.3 3.2-3.1 3.5"/><path d="M9 3.5h5"/>'
+      };
+
+      /* ============ HELPERS ============ */
+      function $(id) { return document.getElementById(id); }
+      function ingById(id) { for (var i = 0; i < INGREDIENTS.length; i++) if (INGREDIENTS[i].id === id) return INGREDIENTS[i]; return INGREDIENTS[0]; }
+      function unitById(id) { for (var i = 0; i < UNITS.length; i++) if (UNITS[i].id === id) return UNITS[i]; return UNITS[0]; }
+
+      // Terima koma maupun titik sebagai pemisah desimal (kebiasaan mengetik Indonesia).
+      function parseAmountSimple(str) {
+        if (str == null) return NaN;
+        var s = String(str).trim().replace(",", ".");
+        var v = parseFloat(s);
+        return isNaN(v) ? NaN : v;
+      }
+
+      // Format angka gaya Indonesia: koma desimal, titik ribuan, maks 2 angka di belakang koma.
+      function fmt(n) {
+        if (n == null || !isFinite(n)) return "–";
+        var r = Math.round(n * 100) / 100;
+        return r.toLocaleString("id-ID", { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+      }
+      function fmtDensity(d) {
+        return d.toLocaleString("id-ID", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+      }
+
+      // Inti konversi: semua lewat gram.
+      // Volume -> gram memakai massa jenis bahan; berat <-> berat dan volume <-> volume
+      // otomatis tidak bergantung bahan karena massa jenis saling meniadakan.
+      function toGrams(amount, unit, ing) {
+        if (unit.type === "weight") return amount * unit.factor;
+        return amount * unit.factor * ing.density;
+      }
+      function fromGrams(grams, unit, ing) {
+        if (unit.type === "weight") return grams / unit.factor;
+        return grams / (unit.factor * ing.density);
+      }
+      function convert(amount, fromUnit, toUnit, ing) {
+        return fromGrams(toGrams(amount, fromUnit, ing), toUnit, ing);
+      }
+
+      var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* ============ TOAST ============ */
+      var toastTimer = null;
+      function showToast(msg) {
+        var t = $("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2400);
+      }
+
+      /* ============ KONVERTER ============ */
+      var state = { ing: "gula", from: "sdm", to: "gram" };
+      var displayedValue = 0;
+      var countAnim = null;
+
+      function buildIngredientGrid() {
+        var grid = $("ingGrid");
+        INGREDIENTS.forEach(function (ing) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "ing-card";
+          b.setAttribute("aria-pressed", ing.id === state.ing ? "true" : "false");
+          b.dataset.ing = ing.id;
+          b.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            (ICONS[ing.icon] || "") + "</svg>" +
+            '<span class="ing-name">' + ing.name + "</span>";
+          b.addEventListener("click", function () {
+            state.ing = ing.id;
+            var cards = grid.querySelectorAll(".ing-card");
+            for (var i = 0; i < cards.length; i++) {
+              cards[i].setAttribute("aria-pressed", cards[i].dataset.ing === state.ing ? "true" : "false");
+            }
+            updateConverter(true);
+          });
+          grid.appendChild(b);
+        });
+      }
+
+      function fillUnitSelect(sel, selectedId) {
+        sel.innerHTML = "";
+        UNITS.forEach(function (u) {
+          var o = document.createElement("option");
+          o.value = u.id;
+          o.textContent = u.name;
+          if (u.id === selectedId) o.selected = true;
+          sel.appendChild(o);
+        });
+      }
+
+      function animateNumber(target) {
+        var el = $("resultNum");
+        if (reducedMotion || !isFinite(target)) {
+          el.textContent = fmt(target);
+          displayedValue = target;
+          return;
+        }
+        if (countAnim) cancelAnimationFrame(countAnim);
+        var startVal = isFinite(displayedValue) ? displayedValue : 0;
+        var startTime = null;
+        var dur = 450;
+        function step(ts) {
+          if (!startTime) startTime = ts;
+          var p = Math.min(1, (ts - startTime) / dur);
+          var eased = 1 - Math.pow(1 - p, 3);
+          var cur = startVal + (target - startVal) * eased;
+          el.textContent = fmt(cur);
+          if (p < 1) countAnim = requestAnimationFrame(step);
+          else { displayedValue = target; el.textContent = fmt(target); }
+        }
+        countAnim = requestAnimationFrame(step);
+      }
+
+      function wiggleSpoon() {
+        if (reducedMotion) return;
+        var s = $("spoonIcon");
+        s.classList.remove("wiggle");
+        void s.getBoundingClientRect();
+        s.classList.add("wiggle");
+      }
+
+      function resultSentence() {
+        var ing = ingById(state.ing);
+        var amount = parseAmountSimple($("amountInput").value);
+        var from = unitById(state.from), to = unitById(state.to);
+        if (!isFinite(amount)) return "";
+        var res = convert(amount, from, to, ing);
+        return fmt(amount) + " " + from.short + " " + ing.name.toLowerCase() + " = " + fmt(res) + " " + to.short;
+      }
+
+      function updateConverter(animate) {
+        var ing = ingById(state.ing);
+        var from = unitById(state.from), to = unitById(state.to);
+        var amount = parseAmountSimple($("amountInput").value);
+        var valid = isFinite(amount) && amount >= 0;
+
+        $("resultEq").textContent = valid
+          ? fmt(amount) + " " + from.short + " " + ing.name.toLowerCase()
+          : "Isi jumlah yang valid";
+        $("resultUnit").textContent = to.short;
+
+        var grams = valid ? toGrams(amount, from, ing) : NaN;
+        var result = valid ? fromGrams(grams, to, ing) : NaN;
+        if (animate) { animateNumber(result); wiggleSpoon(); }
+        else { $("resultNum").textContent = fmt(result); displayedValue = result; }
+
+        // Tabel setara: semua satuan selain satuan tujuan.
+        var list = $("equivList");
+        list.innerHTML = "";
+        UNITS.forEach(function (u) {
+          if (u.id === to.id) return;
+          var li = document.createElement("li");
+          var val = valid ? fromGrams(grams, u, ing) : NaN;
+          li.innerHTML = '<span class="eq-val">' + fmt(val) + "</span>" +
+                         '<span class="eq-unit">' + u.name + "</span>";
+          list.appendChild(li);
+        });
+
+        $("densityNote").textContent =
+          "Massa jenis " + ing.name.toLowerCase() + ": " + fmtDensity(ing.density) +
+          " gram per ml. Konversi antar-satuan berat (gram, ons, kg) dan antar-satuan volume (ml, cup, gelas) tidak bergantung pada bahan.";
+      }
+
+      function buildPresets() {
+        var row = $("presetRow");
+        PRESETS.forEach(function (p) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "preset-chip";
+          b.textContent = p.label;
+          b.addEventListener("click", function () {
+            state.ing = p.ing; state.from = p.from; state.to = p.to;
+            $("amountInput").value = String(p.amount);
+            $("fromUnit").value = p.from;
+            $("toUnit").value = p.to;
+            var cards = $("ingGrid").querySelectorAll(".ing-card");
+            for (var i = 0; i < cards.length; i++) {
+              cards[i].setAttribute("aria-pressed", cards[i].dataset.ing === state.ing ? "true" : "false");
+            }
+            updateConverter(true);
+            showToast("Konverter diisi: " + p.label);
+            document.querySelector(".panel").scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+          });
+          row.appendChild(b);
+        });
+      }
+
+      /* ============ SKALA RESEP ============ */
+      var scaleRows = [
+        { ing: "terigu", amount: 250, unit: "gram" },
+        { ing: "gula",   amount: 100, unit: "gram" }
+      ];
+      var multiplier = 1;
+      var MULTS = [0.5, 1, 1.5, 2, 3];
+
+      function buildMultiplier() {
+        var row = $("multRow");
+        MULTS.forEach(function (m) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "mult-chip";
+          b.textContent = fmt(m) + "×";
+          b.dataset.mult = String(m);
+          b.setAttribute("aria-pressed", m === multiplier ? "true" : "false");
+          b.addEventListener("click", function () {
+            multiplier = m;
+            $("multCustom").value = "";
+            syncMultChips();
+            renderScale();
+          });
+          row.appendChild(b);
+        });
+        var wrap = document.createElement("div");
+        wrap.className = "mult-custom";
+        wrap.innerHTML = '<input id="multCustom" type="text" inputmode="decimal" autocomplete="off" placeholder="Lainnya" aria-label="Pengali bebas" /><span>× lipat</span>';
+        row.appendChild(wrap);
+        $("multCustom").addEventListener("input", function () {
+          var v = parseAmountSimple(this.value);
+          if (isFinite(v) && v > 0) multiplier = v;
+          syncMultChips();
+          renderScale();
+        });
+      }
+      function syncMultChips() {
+        var chips = $("multRow").querySelectorAll(".mult-chip");
+        var customVal = parseAmountSimple($("multCustom").value);
+        var customActive = isFinite(customVal) && customVal > 0;
+        for (var i = 0; i < chips.length; i++) {
+          var active = !customActive && parseFloat(chips[i].dataset.mult) === multiplier;
+          chips[i].setAttribute("aria-pressed", active ? "true" : "false");
+        }
+      }
+
+      function renderScale() {
+        var list = $("scaleList");
+        list.innerHTML = "";
+        if (scaleRows.length === 0) {
+          var empty = document.createElement("li");
+          empty.className = "scale-empty";
+          empty.textContent = "Belum ada bahan. Tambahkan bahan pertamamu lewat formulir di bawah.";
+          list.appendChild(empty);
+        }
+        var totalGrams = 0;
+        scaleRows.forEach(function (r, idx) {
+          var ing = ingById(r.ing);
+          var unit = unitById(r.unit);
+          var scaled = r.amount * multiplier;
+          var grams = toGrams(scaled, unit, ing);
+          totalGrams += grams;
+
+          var li = document.createElement("li");
+          li.className = "scale-row";
+          li.innerHTML =
+            '<div class="sr-main">' +
+              '<div class="sr-name">' + ing.name + "</div>" +
+              '<div class="sr-detail">' + fmt(r.amount) + " " + unit.short +
+                ' <span class="sr-arrow">→</span> ' + fmt(scaled) + " " + unit.short + "</div>" +
+            "</div>" +
+            '<div class="sr-grams">' + fmt(grams) + " gram</div>";
+
+          var rm = document.createElement("button");
+          rm.type = "button";
+          rm.className = "remove-btn";
+          rm.setAttribute("aria-label", "Hapus " + ing.name + " dari daftar skala resep");
+          rm.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/><path d="M6.5 7l1 12a1.8 1.8 0 0 0 1.8 1.7h5.4a1.8 1.8 0 0 0 1.8-1.7l1-12"/></svg>';
+          rm.addEventListener("click", function () {
+            scaleRows.splice(idx, 1);
+            renderScale();
+          });
+          li.appendChild(rm);
+          list.appendChild(li);
+        });
+        $("scaleTotal").hidden = scaleRows.length === 0;
+        $("scaleTotalVal").textContent = fmt(totalGrams) + " gram";
+      }
+
+      /* ============ INIT ============ */
+      buildIngredientGrid();
+      fillUnitSelect($("fromUnit"), state.from);
+      fillUnitSelect($("toUnit"), state.to);
+      fillUnitSelect($("addUnit"), "gram");
+      (function () {
+        var sel = $("addIng");
+        INGREDIENTS.forEach(function (ing) {
+          var o = document.createElement("option");
+          o.value = ing.id; o.textContent = ing.name;
+          sel.appendChild(o);
+        });
+      })();
+      buildPresets();
+      buildMultiplier();
+
+      $("amountInput").addEventListener("input", function () { updateConverter(true); });
+      $("fromUnit").addEventListener("change", function () { state.from = this.value; updateConverter(true); });
+      $("toUnit").addEventListener("change", function () { state.to = this.value; updateConverter(true); });
+      $("swapBtn").addEventListener("click", function () {
+        var tmp = state.from; state.from = state.to; state.to = tmp;
+        $("fromUnit").value = state.from;
+        $("toUnit").value = state.to;
+        updateConverter(true);
+      });
+
+      $("copyBtn").addEventListener("click", function () {
+        var text = resultSentence();
+        if (!text) { showToast("Isi jumlah yang valid dulu ya"); return; }
+        function done() {
+          var label = $("copyLabel");
+          var btn = $("copyBtn");
+          label.textContent = "Tersalin";
+          btn.classList.add("copied");
+          showToast("Hasil tersalin: " + text);
+          setTimeout(function () { label.textContent = "Salin Hasil"; btn.classList.remove("copied"); }, 2200);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+        } else { fallbackCopy(text); done(); }
+      });
+      function fallbackCopy(text) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch (e) { /* abaikan */ }
+        document.body.removeChild(ta);
+      }
+
+      $("addForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var amt = parseAmountSimple($("addAmount").value);
+        if (!isFinite(amt) || amt <= 0) { showToast("Jumlah bahan harus angka lebih dari 0"); return; }
+        scaleRows.push({ ing: $("addIng").value, amount: amt, unit: $("addUnit").value });
+        renderScale();
+        showToast(ingById($("addIng").value).name + " ditambahkan ke skala resep");
+      });
+
+      updateConverter(false);
+      renderScale();
+    </script>
+  </body>
+</html>

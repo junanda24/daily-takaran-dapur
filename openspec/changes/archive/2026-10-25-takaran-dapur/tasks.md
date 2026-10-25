@@ -1,0 +1,6 @@
+- [x] Explore + propose (spec ini)
+- [ ] Build artifact web statis takaran-dapur
+- [ ] Verify: semua SHALL terpenuhi, konversi dicek manual per bahan
+- [ ] Export artifact ke src/ di folder project
+- [ ] README lengkap + .gitignore (tanpa secret) + commit + repo GitHub + verifikasi API
+- [ ] BUILT.md + profile README + log harian
